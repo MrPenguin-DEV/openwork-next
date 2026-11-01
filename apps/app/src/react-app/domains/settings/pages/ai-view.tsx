@@ -13,7 +13,10 @@ import { SettingsNotice } from "../settings-section";
 import { LayoutStack } from "../settings-layout";
 import { SettingsPanel, SettingsPanelDescription, SettingsPanelHeading, SettingsPanelTitle } from "../shell/panel";
 import { getSettingsTabLabel } from "../shell/settings-page";
+import { useDesktopFeature } from "@/react-app/domains/session/status/use-desktop-feature";
 import { CredentialHealthStatus, LocalProviderStatus, ProviderList, ProviderMeta, ProviderRow, ProviderStatus, ProviderTile } from "./provider-rows";
+import { CustomModelEndpointDialog } from "./custom-model-endpoint-dialog";
+import type { CustomEndpointInstallInput } from "../openai-image-extension";
 
 export type ConnectedProvider = {
   id: string;
@@ -66,6 +69,11 @@ export type AiSettingsViewProps = {
   /** Providers on this device the engine chat runs on cannot use, from the server's skipped list. */
   localProviderStates?: ReadonlyMap<string, LocalProviderEngineState>;
   onOpenDen?: () => void;
+  customEndpointAvailable?: boolean;
+  customEndpointBusy?: boolean;
+  customEndpointError?: string | null;
+  customEndpointStatus?: string | null;
+  onAddCustomEndpoint?: (input: CustomEndpointInstallInput) => Promise<void>;
 };
 
 function deviceSourceLabel(source: ConnectedProvider["source"]) {
@@ -103,6 +111,7 @@ export function aiProvidersDescription(input: { signedIn: boolean; organizationN
 }
 
 export function AiSettingsView(props: AiSettingsViewProps) {
+  const customEndpointsEnabled = useDesktopFeature("customModelEndpoints");
   const healthEntries = useProviderCredentialHealth((state) => state.entries);
   const providerHealth = (providerId: string): ProviderCredentialHealth =>
     (props.runtimeWorkspaceId ? healthEntries[credentialHealthKey(props.runtimeWorkspaceId, providerId)]?.status : undefined) ?? "unverified";
@@ -131,12 +140,23 @@ export function AiSettingsView(props: AiSettingsViewProps) {
         <SettingsPanelTitle>{getSettingsTabLabel("ai")}</SettingsPanelTitle>
         <SettingsPanelDescription>{aiProvidersDescription({ signedIn, organizationName: props.organizationName })}</SettingsPanelDescription>
       </SettingsPanelHeading>
-      <Button className="shrink-0 self-start" disabled={locked || props.busy || props.providerAuthBusy || !ready} onClick={() => void props.onOpenProviderAuth()}>
-        {locked ? <Lock className="size-4" /> : <Plus className="size-4" />}Connect a provider
-      </Button>
+      <div className="flex shrink-0 flex-wrap items-center gap-2 self-start">
+        <Button disabled={locked || props.busy || props.providerAuthBusy || !ready} onClick={() => void props.onOpenProviderAuth()}>
+          {locked ? <Lock className="size-4" /> : <Plus className="size-4" />}Connect a provider
+        </Button>
+        <CustomModelEndpointDialog
+          disabled={locked || props.busy || props.providerAuthBusy || !ready || !props.customEndpointAvailable || !customEndpointsEnabled}
+          existingProviderIds={new Set(props.connectedProviders.map((provider) => provider.id))}
+          busy={props.customEndpointBusy ?? false}
+          error={props.customEndpointError}
+          status={props.customEndpointStatus}
+          onAdd={props.onAddCustomEndpoint}
+        />
+      </div>
     </SettingsPanel>
 
     {locked ? <p className="-mt-3 text-xs text-muted-foreground">Provider connections are managed by your organization administrator.</p> : null}
+    {!customEndpointsEnabled ? <p className="-mt-3 text-xs text-muted-foreground">Custom endpoints are turned off by your deployment or organization administrator.</p> : null}
     {error ? <SettingsNotice tone="error" className="flex flex-wrap items-center justify-between gap-3"><div role="alert"><p>{error}</p>{props.connectedProviders.length ? <p>{t("settings.providers_not_refreshed")}</p> : null}</div><Button variant="outline" disabled={props.busy || loading} aria-busy={loading} onClick={() => void props.onRetryProviders()}>{t("settings.providers_retry")}</Button></SettingsNotice> : null}
 
     <section className="flex flex-col gap-3" aria-labelledby="ai-providers-device">

@@ -1,5 +1,15 @@
 import type { ProviderConfig } from "@opencode-ai/sdk/v2/client";
 
+export type CustomEndpointInstallInput = {
+  providerId: string;
+  name: string;
+  baseURL: string;
+  modelId: string;
+  modelName: string;
+  setDefault: boolean;
+  apiKey: string;
+};
+
 export type LocalProviderInstallInput = {
   providerId: string;
   name: string;
