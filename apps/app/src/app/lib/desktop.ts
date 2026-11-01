@@ -1,6 +1,6 @@
 import type { DesktopAgentPermissionRule } from "@openwork/types/den/desktop-policies";
 import { nativeDeepLinkEvent } from "./deep-link-bridge";
-import { isDesktopRuntime, isElectronRuntime, isTauriRuntime } from "./runtime-env";
+import { isDesktopRuntime, isTauriRuntime } from "./runtime-env";
 
 export type * from "./desktop-types";
 export type {
