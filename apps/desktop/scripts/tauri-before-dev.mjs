@@ -149,10 +149,12 @@ const fetchOpenWorkDevServerId = async (baseUrl) => {
 
 const runPrepareSidecars = () => {
   const prepareScript = resolve(fileURLToPath(new URL("./prepare-sidecar.mjs", import.meta.url)));
+  const tauriSidecarDir = resolve(fileURLToPath(new URL("../src-tauri/sidecars", import.meta.url)));
   const args = [prepareScript];
   if (process.env.OPENWORK_SIDECAR_FORCE_BUILD !== "0") {
     args.push("--force");
   }
+  args.push("--outdir", tauriSidecarDir);
   const result = spawnSync(process.execPath, args, {
     stdio: "inherit",
   });
@@ -265,7 +267,7 @@ const runUiDevServer = () => {
 };
 
 const runBuildOpenworkServer = () => {
-  const repoRoot = resolve(__dirname, "../..");
+  const repoRoot = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
   const result = spawnSync(pnpmCmd, [...pnpmArgs, "--filter", "openwork-server", "build:bin"], {
     cwd: repoRoot,
     stdio: "inherit",
