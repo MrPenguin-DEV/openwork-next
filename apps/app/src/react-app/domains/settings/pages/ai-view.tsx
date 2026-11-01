@@ -14,6 +14,8 @@ import { LayoutStack } from "../settings-layout";
 import { SettingsPanel, SettingsPanelDescription, SettingsPanelHeading, SettingsPanelTitle } from "../shell/panel";
 import { getSettingsTabLabel } from "../shell/settings-page";
 import { CredentialHealthStatus, LocalProviderStatus, ProviderList, ProviderMeta, ProviderRow, ProviderStatus, ProviderTile } from "./provider-rows";
+import { CustomModelEndpointDialog } from "./custom-model-endpoint-dialog";
+import type { CustomEndpointInstallInput } from "../openai-image-extension";
 
 export type ConnectedProvider = {
   id: string;
@@ -66,6 +68,11 @@ export type AiSettingsViewProps = {
   /** Providers on this device the engine chat runs on cannot use, from the server's skipped list. */
   localProviderStates?: ReadonlyMap<string, LocalProviderEngineState>;
   onOpenDen?: () => void;
+  customEndpointAvailable?: boolean;
+  customEndpointBusy?: boolean;
+  customEndpointError?: string | null;
+  customEndpointStatus?: string | null;
+  onAddCustomEndpoint?: (input: CustomEndpointInstallInput) => Promise<void>;
 };
 
 function deviceSourceLabel(source: ConnectedProvider["source"]) {
@@ -131,9 +138,18 @@ export function AiSettingsView(props: AiSettingsViewProps) {
         <SettingsPanelTitle>{getSettingsTabLabel("ai")}</SettingsPanelTitle>
         <SettingsPanelDescription>{aiProvidersDescription({ signedIn, organizationName: props.organizationName })}</SettingsPanelDescription>
       </SettingsPanelHeading>
-      <Button className="shrink-0 self-start" disabled={locked || props.busy || props.providerAuthBusy || !ready} onClick={() => void props.onOpenProviderAuth()}>
-        {locked ? <Lock className="size-4" /> : <Plus className="size-4" />}Connect a provider
-      </Button>
+      <div className="flex shrink-0 flex-wrap items-center gap-2 self-start">
+        <Button disabled={locked || props.busy || props.providerAuthBusy || !ready} onClick={() => void props.onOpenProviderAuth()}>
+          {locked ? <Lock className="size-4" /> : <Plus className="size-4" />}Connect a provider
+        </Button>
+        <CustomModelEndpointDialog
+          disabled={locked || props.busy || props.providerAuthBusy || !ready || !props.customEndpointAvailable}
+          busy={props.customEndpointBusy ?? false}
+          error={props.customEndpointError}
+          status={props.customEndpointStatus}
+          onAdd={props.onAddCustomEndpoint}
+        />
+      </div>
     </SettingsPanel>
 
     {locked ? <p className="-mt-3 text-xs text-muted-foreground">Provider connections are managed by your organization administrator.</p> : null}

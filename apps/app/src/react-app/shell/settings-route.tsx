@@ -212,6 +212,7 @@ import { resolveEngineRootEndpoint } from "@/app/lib/workspace-endpoint";
 import {
   buildLocalProviderInstallPatch,
   buildLocalProviderSyncPatch,
+  type CustomEndpointInstallInput,
   type LocalProviderInstallInput,
   type LocalProviderSyncInput,
 } from "@/react-app/domains/settings/openai-image-extension";
@@ -1275,7 +1276,7 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
     const workspaceId = runtimeWorkspaceId?.trim() ?? "";
     if (!client || !workspaceId) {
       setLocalProviderError("OpenWork server is not connected for this workspace.");
-      return;
+      return false;
     }
 
     setLocalProviderBusy(true);
@@ -1300,8 +1301,10 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
         // ignore browser event dispatch failures
       }
       setLocalProviderStatus(done.status);
+      return true;
     } catch (error) {
       setLocalProviderError(describeRouteError(error));
+      return false;
     } finally {
       setLocalProviderBusy(false);
     }
@@ -1318,6 +1321,35 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
       ...(input.setDefault ? { defaultModel: { providerID: input.providerId, modelID: modelId } } : {}),
     });
   }, [applyLocalProviderPatch]);
+
+  const addCustomEndpoint = useCallback(async (input: CustomEndpointInstallInput) => {
+    const modelId = input.modelId.trim();
+    if (!modelId) {
+      throw new Error("Model ID is required.");
+    }
+    const applied = await applyLocalProviderPatch(
+      buildLocalProviderInstallPatch({
+        providerId: input.providerId,
+        name: input.name,
+        baseURL: input.baseURL,
+        modelId,
+        modelName: input.modelName.trim() || modelId,
+        setDefault: input.setDefault,
+        supportsVision: false,
+        thinkingLevels: [],
+      }),
+      {
+        status: `Added ${input.name} with ${modelId}.`,
+        ...(input.setDefault ? { defaultModel: { providerID: input.providerId, modelID: modelId } } : {}),
+      },
+    );
+    if (!applied) {
+      throw new Error("The endpoint couldn't be saved. Check the workspace connection and try again.");
+    }
+    if (input.apiKey.trim()) {
+      await providerAuthStore.submitProviderApiKey(input.providerId, input.apiKey);
+    }
+  }, [applyLocalProviderPatch, providerAuthStore]);
 
   const syncLocalProvider = useCallback(async (input: LocalProviderSyncInput) => {
     if (input.models.length === 0) {
@@ -2255,6 +2287,11 @@ function SettingsRouteContent(props: SettingsSurfaceProps = {}) {
               }
             }}
             canAddProviders={!providerAuthStore.isProviderAddRestricted()}
+            customEndpointAvailable={Boolean((selectedWorkspaceEndpoint?.client ?? openworkClient) && runtimeWorkspaceId)}
+            customEndpointBusy={localProviderBusy || providerAuthSnapshot.providerAuthBusy}
+            customEndpointError={localProviderError}
+            customEndpointStatus={localProviderStatus}
+            onAddCustomEndpoint={addCustomEndpoint}
             signedIn={cloudSession.isSignedIn}
             organizationName={cloudSession.activeOrgName}
             localProviderStates={localProviderStates}
