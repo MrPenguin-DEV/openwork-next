@@ -1,5 +1,6 @@
 import type { DesktopAgentPermissionRule } from "@openwork/types/den/desktop-policies";
 import { nativeDeepLinkEvent } from "./deep-link-bridge";
+import { isDesktopRuntime, isElectronRuntime, isTauriRuntime } from "./runtime-env";
 
 export type * from "./desktop-types";
 export type {
@@ -336,13 +337,18 @@ export const desktopBridge = new Proxy(electronBridge, {
     if (cached) return cached;
 
     const fn = async (...args: unknown[]) => {
+      if (isTauriRuntime()) {
+        const rustBridge = await import("./desktop-tauri");
+        const method = Reflect.get(rustBridge, prop);
+        if (typeof method !== "function") {
+          throw new Error(`The Rust desktop host does not implement "${prop}" yet.`);
+        }
+        return Reflect.apply(method, rustBridge, args);
+      }
       const invokeDesktop = window.__OPENWORK_ELECTRON__?.invokeDesktop;
       if (!invokeDesktop) {
-        throw new Error(`Electron desktop helper is unavailable: ${prop}`);
+        throw new Error(`Desktop host is unavailable for command: ${prop}`);
       }
-      // The Proxy is the one dynamic point in the bridge: `prop` is whatever
-      // property was accessed, already constrained by the DesktopBridge
-      // surface this Proxy is exported as.
       return invokeDesktop(
         prop as DesktopCommandName,
         ...(args as DesktopCommandArgs<DesktopCommandName>),
@@ -489,10 +495,18 @@ export const desktopFetch: typeof globalThis.fetch = async (input, init) => {
   if (isLoopbackUrl(input)) {
     return globalThis.fetch(input, init);
   }
+  if (isTauriRuntime()) {
+    const rustBridge = await import("./desktop-tauri");
+    return rustBridge.desktopFetch(input, init);
+  }
   return desktopFetchThroughMain(input, init);
 };
 
 export async function desktopFetchViaMain(input: RequestInfo | URL, init?: RequestInit, timeoutMs?: number): Promise<Response> {
+  if (isTauriRuntime()) {
+    const rustBridge = await import("./desktop-tauri");
+    return rustBridge.desktopFetch(input, init);
+  }
   return desktopFetchThroughMain(input, init, { timeoutMs });
 }
 
@@ -503,6 +517,10 @@ export async function desktopFetchAgentContextDiagnostics(
 ): Promise<Response> {
   if (isLoopbackUrl(input)) {
     return globalThis.fetch(input, init);
+  }
+  if (isTauriRuntime()) {
+    const rustBridge = await import("./desktop-tauri");
+    return rustBridge.desktopFetch(input, init);
   }
   return desktopFetchThroughMain(input, init, {
     agentContextDiagnosticsDeadlineAtMs: deadlineAtMs,
@@ -535,6 +553,11 @@ export type DesktopUrlOpenStatus = "opened" | "opening";
 
 export async function openDesktopUrlWithStatus(url: string): Promise<DesktopUrlOpenStatus> {
   const safeUrl = assertDesktopWebUrl(url);
+  if (isTauriRuntime()) {
+    const rustBridge = await import("./desktop-tauri");
+    await rustBridge.openDesktopUrl(safeUrl);
+    return "opened";
+  }
   const openExternal = window.__OPENWORK_ELECTRON__?.shell?.openExternal;
   if (openExternal) {
     const result = await openExternal(safeUrl);
@@ -555,6 +578,11 @@ export async function openDesktopUrl(url: string): Promise<void> {
 }
 
 export async function openDesktopPath(target: string): Promise<void> {
+  if (isTauriRuntime()) {
+    const rustBridge = await import("./desktop-tauri");
+    await rustBridge.openDesktopPath(target);
+    return;
+  }
   const result = await invokeElectronHelper("__openPath", target);
   if (typeof result === "string" && result.trim()) {
     throw new Error(result);
@@ -576,6 +604,11 @@ export async function openDesktopWorkspaceFile(workspaceRoot: string, target: st
 }
 
 export async function revealDesktopItemInDir(target: string): Promise<void> {
+  if (isTauriRuntime()) {
+    const rustBridge = await import("./desktop-tauri");
+    await rustBridge.revealDesktopItemInDir(target);
+    return;
+  }
   const result = await invokeElectronHelper("__revealItemInDir", target);
   if (typeof result === "string" && result.trim()) {
     throw new Error(result);
@@ -624,10 +657,19 @@ export async function openDesktopWithApp(target: string, appPath: string, worksp
 }
 
 export async function relaunchDesktopApp(): Promise<void> {
+  if (isTauriRuntime()) {
+    const rustBridge = await import("./desktop-tauri");
+    await rustBridge.relaunchDesktopApp();
+    return;
+  }
   await window.__OPENWORK_ELECTRON__?.shell?.relaunch?.();
 }
 
 export async function getDesktopHomeDir(): Promise<string> {
+  if (isTauriRuntime()) {
+    const rustBridge = await import("./desktop-tauri");
+    return rustBridge.getDesktopHomeDir();
+  }
   return invokeElectronHelper("__homeDir");
 }
 
@@ -635,7 +677,7 @@ let cachedHomeDir: Promise<string | null> | null = null;
 
 /** The home folder for expanding `~/` in chat file links; null outside the desktop app. */
 export function getCachedDesktopHomeDir(): Promise<string | null> {
-  if (typeof window === "undefined" || !window.__OPENWORK_ELECTRON__?.invokeDesktop) return Promise.resolve(null);
+  if (typeof window === "undefined" || !isDesktopRuntime()) return Promise.resolve(null);
   cachedHomeDir ??= getDesktopHomeDir()
     .then((home) => (typeof home === "string" && home.trim() ? home : null))
     .catch(() => {
@@ -646,16 +688,28 @@ export function getCachedDesktopHomeDir(): Promise<string | null> {
 }
 
 export async function joinDesktopPath(...parts: string[]): Promise<string> {
+  if (isTauriRuntime()) {
+    const rustBridge = await import("./desktop-tauri");
+    return rustBridge.joinDesktopPath(...parts);
+  }
   return invokeElectronHelper("__joinPath", ...parts);
 }
 
 export async function setDesktopZoomFactor(value: number): Promise<boolean> {
+  if (isTauriRuntime()) {
+    const rustBridge = await import("./desktop-tauri");
+    return rustBridge.setDesktopZoomFactor(value);
+  }
   return invokeElectronHelper("__setZoomFactor", value);
 }
 
 export async function subscribeDesktopDeepLinks(
   handler: (urls: string[]) => void,
 ): Promise<() => void> {
+  if (isTauriRuntime()) {
+    const rustBridge = await import("./desktop-tauri");
+    return rustBridge.subscribeDesktopDeepLinks(handler);
+  }
   const listener = (event: Event) => {
     const customEvent = event as CustomEvent<string[]>;
     if (Array.isArray(customEvent.detail)) {
