@@ -13,6 +13,7 @@ import { SettingsNotice } from "../settings-section";
 import { LayoutStack } from "../settings-layout";
 import { SettingsPanel, SettingsPanelDescription, SettingsPanelHeading, SettingsPanelTitle } from "../shell/panel";
 import { getSettingsTabLabel } from "../shell/settings-page";
+import { useDesktopFeature } from "@/react-app/domains/session/status/use-desktop-feature";
 import { CredentialHealthStatus, LocalProviderStatus, ProviderList, ProviderMeta, ProviderRow, ProviderStatus, ProviderTile } from "./provider-rows";
 import { CustomModelEndpointDialog } from "./custom-model-endpoint-dialog";
 import type { CustomEndpointInstallInput } from "../openai-image-extension";
@@ -110,6 +111,7 @@ export function aiProvidersDescription(input: { signedIn: boolean; organizationN
 }
 
 export function AiSettingsView(props: AiSettingsViewProps) {
+  const customEndpointsEnabled = useDesktopFeature("customModelEndpoints");
   const healthEntries = useProviderCredentialHealth((state) => state.entries);
   const providerHealth = (providerId: string): ProviderCredentialHealth =>
     (props.runtimeWorkspaceId ? healthEntries[credentialHealthKey(props.runtimeWorkspaceId, providerId)]?.status : undefined) ?? "unverified";
@@ -143,7 +145,8 @@ export function AiSettingsView(props: AiSettingsViewProps) {
           {locked ? <Lock className="size-4" /> : <Plus className="size-4" />}Connect a provider
         </Button>
         <CustomModelEndpointDialog
-          disabled={locked || props.busy || props.providerAuthBusy || !ready || !props.customEndpointAvailable}
+          disabled={locked || props.busy || props.providerAuthBusy || !ready || !props.customEndpointAvailable || !customEndpointsEnabled}
+          existingProviderIds={new Set(props.connectedProviders.map((provider) => provider.id))}
           busy={props.customEndpointBusy ?? false}
           error={props.customEndpointError}
           status={props.customEndpointStatus}
@@ -153,6 +156,7 @@ export function AiSettingsView(props: AiSettingsViewProps) {
     </SettingsPanel>
 
     {locked ? <p className="-mt-3 text-xs text-muted-foreground">Provider connections are managed by your organization administrator.</p> : null}
+    {!customEndpointsEnabled ? <p className="-mt-3 text-xs text-muted-foreground">Custom endpoints are turned off by your deployment or organization administrator.</p> : null}
     {error ? <SettingsNotice tone="error" className="flex flex-wrap items-center justify-between gap-3"><div role="alert"><p>{error}</p>{props.connectedProviders.length ? <p>{t("settings.providers_not_refreshed")}</p> : null}</div><Button variant="outline" disabled={props.busy || loading} aria-busy={loading} onClick={() => void props.onRetryProviders()}>{t("settings.providers_retry")}</Button></SettingsNotice> : null}
 
     <section className="flex flex-col gap-3" aria-labelledby="ai-providers-device">

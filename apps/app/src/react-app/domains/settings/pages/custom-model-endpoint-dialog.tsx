@@ -26,6 +26,7 @@ type EndpointKind = "openai-compatible" | "ollama";
 
 type CustomModelEndpointDialogProps = {
   disabled?: boolean;
+  existingProviderIds?: ReadonlySet<string>;
   busy: boolean;
   error?: string | null;
   status?: string | null;
@@ -141,6 +142,9 @@ export function CustomModelEndpointDialog(props: CustomModelEndpointDialogProps)
       if (!trimmedModelId) throw new Error("Enter a model ID or load one from the endpoint.");
       const normalized = normalizeBaseURL(baseURL);
       const providerId = providerIdFromName(trimmedName);
+      if (props.existingProviderIds?.has(providerId)) {
+        throw new Error("A provider with this name is already configured. Choose a different provider name.");
+      }
 
       setSaving(true);
       await props.onAdd?.({

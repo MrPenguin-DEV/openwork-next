@@ -104,6 +104,17 @@ function defineFeatures<const T extends Record<string, FeatureDefinition>>(featu
 const everywhere = ["cloud", "self_hosted"] as const
 
 export const FEATURES = defineFeatures({
+  customModelEndpoints: {
+    label: "Custom model endpoints",
+    description: "Add custom OpenAI-compatible endpoints and remote Ollama servers, including notebook-hosted endpoints, with optional API keys and model selection.",
+    category: "models",
+    added: "2026-11-01",
+    since: "2026-11",
+    author: "MrPenguin-DEV",
+    docs: "docs/features/custom-model-endpoints/README.md",
+    deployments: everywhere,
+    default: false,
+  },
   autoRouter: {
     label: "AI Gateway: Smart Model Router",
     description: "Admins create Smart Routers for everyone, teams or people, listing AI Gateway models and the tasks each handles. Members pick \"Smart: <name>\": each prompt goes to the model whose tasks fit it best, at the thinking level it needs.",
