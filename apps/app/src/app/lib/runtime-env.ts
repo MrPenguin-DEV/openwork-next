@@ -6,7 +6,7 @@ export function isElectronRuntime() {
 }
 
 export function isTauriRuntime() {
-  return typeof window !== "undefined" && (window as Window).__TAURI_INTERNALS__ != null;
+  return typeof window !== "undefined" && Reflect.get(window, "__TAURI_INTERNALS__") != null;
 }
 
 export function isDesktopRuntime() {
