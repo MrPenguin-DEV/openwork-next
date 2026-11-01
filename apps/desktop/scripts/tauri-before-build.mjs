@@ -14,5 +14,6 @@ const runPnpm = (args) => {
   }
 };
 
+runPnpm(["-C", "../..", "--filter", "openwork-server", "build:bin"]);
 runPnpm(["-C", "../..", "--filter", "@openwork/desktop", "run", "prepare:sidecar"]);
 runPnpm(["--filter", "@openwork/app", "build"]);
