@@ -142,7 +142,7 @@ const humanizeModelLabel = (value: string) => {
     .join(" ");
 };
 
-export { isDesktopRuntime, isElectronRuntime } from "../lib/runtime-env";
+export { isDesktopRuntime, isElectronRuntime, isTauriRuntime } from "../lib/runtime-env";
 
 export function isWindowsPlatform() {
   if (typeof navigator === "undefined") return false;
