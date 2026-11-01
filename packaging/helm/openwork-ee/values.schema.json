@@ -61,6 +61,16 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "customModelEndpoints": {
+              "enum": [
+                "",
+                "true",
+                "false",
+                true,
+                false
+              ],
+              "description": "Custom model endpoints: Add custom OpenAI-compatible endpoints and remote Ollama servers, including notebook-hosted endpoints, with optional API keys and model selection. Renders DEN_FEATURE_CUSTOM_MODEL_ENDPOINTS."
+            },
             "autoRouter": {
               "enum": [
                 "",
