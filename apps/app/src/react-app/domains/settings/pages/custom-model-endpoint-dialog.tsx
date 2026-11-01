@@ -48,7 +48,7 @@ function normalizeBaseURL(value: string): string {
   }
 
   const path = url.pathname.replace(/\/+$/, "");
-  url.pathname = /\/v1$/i.test(path) ? path : \`\${path}/v1\`;
+  url.pathname = /\/v1$/i.test(path) ? path : `${path}/v1`;
   return url.toString().replace(/\/$/, "");
 }
 
@@ -71,9 +71,9 @@ function parseModelIds(payload: unknown, kind: EndpointKind): string[] {
 
 async function discoverModels(kind: EndpointKind, baseURL: string, apiKey: string): Promise<string[]> {
   const endpoint = kind === "ollama"
-    ? \`\${baseURL.replace(/\/v1\/?$/i, "")}/api/tags\`
-    : \`\${baseURL}/models\`;
-  const headers = apiKey.trim() ? { Authorization: \`Bearer \${apiKey.trim()}\` } : {};
+    ? `${baseURL.replace(/\/v1\/?$/i, "")}/api/tags`
+    : `${baseURL}/models`;
+  const headers = apiKey.trim() ? { Authorization: `Bearer ${apiKey.trim()}` } : {};
   const response = await fetch(endpoint, {
     method: "GET",
     headers,
@@ -82,7 +82,7 @@ async function discoverModels(kind: EndpointKind, baseURL: string, apiKey: strin
   });
 
   if (!response.ok) {
-    throw new Error(\`The server returned HTTP \${response.status} while listing models.\`);
+    throw new Error(`The server returned HTTP ${response.status} while listing models.`);
   }
 
   const models = parseModelIds(await response.json(), kind);
@@ -95,7 +95,7 @@ async function discoverModels(kind: EndpointKind, baseURL: string, apiKey: strin
 function providerIdFromName(name: string): string {
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 48);
   if (!slug) throw new Error("Provider name must contain at least one letter or number.");
-  return \`custom_\${slug}\`;
+  return `custom_${slug}`;
 }
 
 export function CustomModelEndpointDialog(props: CustomModelEndpointDialogProps) {
@@ -121,11 +121,11 @@ export function CustomModelEndpointDialog(props: CustomModelEndpointDialogProps)
       const found = await discoverModels(kind, normalized, apiKey);
       setModels(found);
       setModelId((current) => current.trim() || found[0] || "");
-      setModelHint(\`Found \${found.length} model\${found.length === 1 ? "" : "s"}.\`);
+      setModelHint(`Found ${found.length} model${found.length === 1 ? "" : "s"}.`);
     } catch (error) {
       setModels([]);
       setFormError(error instanceof Error
-        ? \`\${error.message} You can still enter a model ID manually; some tunnels require CORS to be enabled for model discovery.\`
+        ? `${error.message} You can still enter a model ID manually; some tunnels require CORS to be enabled for model discovery.`
         : "Couldn't read models from this endpoint. Enter a model ID manually.");
     } finally {
       setLoadingModels(false);
