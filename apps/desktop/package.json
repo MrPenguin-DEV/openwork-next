@@ -26,7 +26,7 @@
     "test:session-runner": "node --test ./test/session-runner.test.mjs ./test/remote-session-transcript.test.mjs",
     "prepare:sidecar": "node ./scripts/prepare-sidecar.mjs",
     "dev:tauri": "pnpm exec tauri dev",
-    "build:tauri": "node ./scripts/tauri-before-build.mjs && pnpm exec tauri build",
+    "build:tauri": "pnpm exec tauri build",
     "package:tauri": "pnpm run build:tauri"
   },
   "dependencies": {
