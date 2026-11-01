@@ -409,17 +409,24 @@ fn ensure_openwork_server_sidecar() {
         }
     }
 
+    // The current workspace builds the supported standalone server entry
+    // with `pnpm --filter openwork-server build:bin`. Prefer that artifact
+    // over PATH so a local Tauri build always embeds the matching server.
+    let workspace_server_name = if target.contains("windows") {
+        "openwork-server.exe"
+    } else {
+        "openwork-server"
+    };
+    let workspace_server_path = manifest_dir
+        .join("../../server/dist/bin")
+        .join(workspace_server_name);
+
     let source_path = env::var("OPENWORK_SERVER_BIN_PATH")
         .ok()
         .map(PathBuf::from)
         .filter(|path| path.is_file())
-        .or_else(|| {
-            find_in_path(if target.contains("windows") {
-                "openwork-server.exe"
-            } else {
-                "openwork-server"
-            })
-        });
+        .or_else(|| workspace_server_path.is_file().then_some(workspace_server_path))
+        .or_else(|| find_in_path(workspace_server_name));
 
     let profile = env::var("PROFILE").unwrap_or_default();
 
