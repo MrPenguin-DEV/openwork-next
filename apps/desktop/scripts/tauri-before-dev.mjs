@@ -264,6 +264,19 @@ const runUiDevServer = () => {
   return child;
 };
 
+const runBuildOpenworkServer = () => {
+  const repoRoot = resolve(__dirname, "../..");
+  const result = spawnSync(pnpmCmd, [...pnpmArgs, "--filter", "openwork-server", "build:bin"], {
+    cwd: repoRoot,
+    stdio: "inherit",
+    shell: process.platform === "win32",
+  });
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1);
+  }
+};
+
+runBuildOpenworkServer();
 runPrepareSidecars();
 ensureLinuxDesktopDependencies();
 
