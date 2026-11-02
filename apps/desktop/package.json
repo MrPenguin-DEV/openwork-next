@@ -11,9 +11,9 @@
   "main": "electron/main.mjs",
   "type": "module",
   "scripts": {
-    "dev": "node ./scripts/electron-dev.mjs",
+    "dev": "pnpm run dev:tauri",
     "dev:electron": "node ./scripts/electron-dev.mjs",
-    "build": "node ./scripts/electron-build.mjs",
+    "build": "pnpm run build:tauri",
     "build:electron": "node ./scripts/electron-build.mjs",
     "rebuild:electron-native": "electron-rebuild --force --which-module better-sqlite3",
     "package:electron": "pnpm run build:electron && pnpm exec electron-builder --config electron-builder.yml",
@@ -24,7 +24,10 @@
     "check:electron": "node ./scripts/check-electron-bridge.mjs",
     "typecheck:electron": "pnpm --filter @openwork/computer-use build && pnpm --filter @openwork/remote-sessions build && pnpm --dir ../server exec tsc -p ../desktop/tsconfig.electron.json --noEmit",
     "test:session-runner": "node --test ./test/session-runner.test.mjs ./test/remote-session-transcript.test.mjs",
-    "prepare:sidecar": "node ./scripts/prepare-sidecar.mjs"
+    "prepare:sidecar": "node ./scripts/prepare-sidecar.mjs",
+    "dev:tauri": "pnpm exec tauri dev",
+    "build:tauri": "pnpm exec tauri build",
+    "package:tauri": "pnpm run build:tauri"
   },
   "dependencies": {
     "@modelcontextprotocol/client": "^2.3.1",
@@ -59,7 +62,8 @@
     "@electron/asar": "^3.4.1",
     "@electron/rebuild": "^4.2.0",
     "electron": "^43.8.1",
-    "electron-builder": "^26.18.0"
+    "electron-builder": "^26.18.0",
+    "@tauri-apps/cli": "^2.9.6"
   },
   "packageManager": "pnpm@10.27.0"
 }
